@@ -1,0 +1,310 @@
+{
+  "editable": true,
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Replicas (Goal 2)",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Dry-run vs real replicas",
+      "description": "desired is the dry-run decision; source is the real workload; real HPA requires --compare-real-hpa.",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "expr": "dryrun_hpa_recommendation_replicas{job=~\"$job\", namespace=~\"$namespace\", name=~\"$name\", stage=\"desired\"}",
+          "legendFormat": "dry-run desired {{name}}",
+          "refId": "A"
+        },
+        {
+          "expr": "dryrun_hpa_virtual_ready_replicas{job=~\"$job\", namespace=~\"$namespace\", name=~\"$name\"}",
+          "legendFormat": "virtual ready {{name}}",
+          "refId": "B"
+        },
+        {
+          "expr": "dryrun_hpa_source_replicas{job=~\"$job\", namespace=~\"$namespace\", name=~\"$name\"}",
+          "legendFormat": "real {{name}}",
+          "refId": "C"
+        },
+        {
+          "expr": "dryrun_hpa_real_hpa_desired_replicas{job=~\"$job\", namespace=~\"$namespace\", name=~\"$name\"}",
+          "legendFormat": "real HPA desired {{name}}",
+          "refId": "D"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "unit": "short"
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Recommendation stages",
+      "description": "metric: highest metric proposal; stabilized: after the stabilization window; desired: after behavior policies and min/max.",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 11
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "expr": "dryrun_hpa_recommendation_replicas{job=~\"$job\", namespace=~\"$namespace\", name=~\"$name\"}",
+          "legendFormat": "{{name}} {{stage}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "unit": "short"
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Metric current vs target",
+      "description": "Utilization in percent, values in base units.",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 11
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "expr": "dryrun_hpa_metric_value{job=~\"$job\", namespace=~\"$namespace\", name=~\"$name\"}",
+          "legendFormat": "{{name}} #{{index}} {{metric}} {{kind}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "unit": "short"
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "row",
+      "title": "Source workload",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "collapsed": false
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Summed usage",
+      "description": "Usage of all ready real pods, per container (cores or bytes).",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 21
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "expr": "dryrun_hpa_source_usage{job=~\"$job\", namespace=~\"$namespace\", name=~\"$name\"}",
+          "legendFormat": "{{name}} {{container}} {{resource}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "unit": "short"
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Conditions",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 21
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "expr": "dryrun_hpa_condition{job=~\"$job\", namespace=~\"$namespace\", name=~\"$name\"} == 1",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "dryrun-hpa"
+  ],
+  "templating": {
+    "list": [
+      {
+        "label": "Data source",
+        "name": "datasource",
+        "query": "prometheus",
+        "type": "datasource"
+      },
+      {
+        "allValue": ".*",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "includeAll": true,
+        "label": "Job",
+        "multi": true,
+        "name": "job",
+        "query": {
+          "query": "label_values(dryrun_hpa_build_info, job)",
+          "refId": "A"
+        },
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "includeAll": true,
+        "label": "Namespace",
+        "multi": true,
+        "name": "namespace",
+        "query": {
+          "query": "label_values(dryrun_hpa_recommendation_replicas{job=~\"$job\"}, namespace)",
+          "refId": "A"
+        },
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "includeAll": true,
+        "label": "DryrunHPA",
+        "multi": true,
+        "name": "name",
+        "query": {
+          "query": "label_values(dryrun_hpa_recommendation_replicas{job=~\"$job\", namespace=~\"$namespace\"}, name)",
+          "refId": "A"
+        },
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "title": "Dry-run HPA: objects",
+  "uid": "dryrun-hpa-objects",
+  "version": 1
+}

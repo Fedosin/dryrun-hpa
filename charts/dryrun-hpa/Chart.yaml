@@ -1,0 +1,12 @@
+apiVersion: v2
+name: dryrun-hpa
+description: >-
+  Dry-run HorizontalPodAutoscaler controller: runs the upstream HPA loop
+  against virtual copies of real Deployments and records its decisions.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - autoscaling
+  - hpa
+  - dry-run

@@ -23,6 +23,14 @@ verify-generated:
   script:
     - make verify-generate
 
+helm-lint:
+  stage: verify
+  image: alpine/helm:4.2.2
+  before_script: []
+  script:
+    - helm lint charts/dryrun-hpa
+    - helm lint charts/dryrun-hpa --set serviceMonitor.enabled=true,dashboards.enabled=true,store.type=none
+
 verify-upstream:
   stage: verify
   script:

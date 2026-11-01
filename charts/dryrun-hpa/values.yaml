@@ -1,0 +1,105 @@
+image:
+  repository: localhost/dryrun-hpa
+  # Defaults to the chart appVersion.
+  tag: ""
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+nameOverride: ""
+# Defaults to <release>-controller.
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  # Defaults to the full name.
+  name: ""
+  annotations: {}
+
+rbac:
+  create: true
+  # Aggregate DryrunHPA permissions into the built-in admin, edit and view roles.
+  aggregateToDefaultRoles: true
+
+leaderElection:
+  enabled: true
+
+hpa:
+  # Same flags and defaults as kube-controller-manager.
+  syncPeriod: 15s
+  tolerance: 0.1
+  downscaleStabilization: 5m
+  cpuInitializationPeriod: 5m
+  initialReadinessDelay: 30s
+  concurrentSyncs: 5
+
+store:
+  # sqlite or none.
+  type: sqlite
+  retention: 168h
+  persistence:
+    enabled: true
+    # Use an existing PVC instead of creating one.
+    existingClaim: ""
+    storageClassName: ""
+    size: 5Gi
+    accessModes: ["ReadWriteOnce"]
+
+simulation:
+  podReadinessDelay: 15s
+  metricsDelay: 30s
+  # extrapolate or ignore ready source pods that have no metrics yet.
+  sourceMissingPods: extrapolate
+
+# Record the desired replicas of real HPAs that target the same Deployments.
+compareRealHPA: false
+# Per-DryrunHPA Prometheus series (cardinality grows with the number of objects).
+perObjectMetrics: false
+enablePprof: false
+
+tracing:
+  # OTLP gRPC endpoint, for example otel-collector.observability:4317.
+  endpoint: ""
+  insecure: false
+  samplingRatio: 0.1
+
+kubeAPI:
+  qps: 20
+  burst: 30
+
+logging:
+  # text or json.
+  format: text
+  verbosity: 0
+
+extraArgs: []
+extraEnv: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 1Gi
+
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+priorityClassName: ""
+
+service:
+  type: ClusterIP
+
+serviceMonitor:
+  # Requires the Prometheus Operator CRDs.
+  enabled: false
+  interval: 15s
+  labels: {}
+
+dashboards:
+  # ConfigMaps with the Grafana dashboards, picked up by the Grafana sidecar.
+  enabled: false
+  labels:
+    grafana_dashboard: "1"
+  annotations: {}

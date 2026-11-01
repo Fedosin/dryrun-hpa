@@ -26,6 +26,7 @@ help: ## Show this help.
 generate: $(BIN)/controller-gen ## Generate deepcopy, CRDs, RBAC, clientset, listers and informers.
 	CONTROLLER_GEN=$(BIN)/controller-gen ./hack/update-codegen.sh
 	go run ./hack/dashboards config/prometheus/dashboards
+	./hack/update-chart.sh
 
 .PHONY: sync-upstream
 sync-upstream: ## Re-copy the upstream HPA controller and apply hack/upstream-patches.
@@ -37,7 +38,8 @@ verify-upstream: sync-upstream ## Fail if internal/upstream differs from upstrea
 
 .PHONY: verify-generate
 verify-generate: generate ## Fail if generated code is stale.
-	git diff --exit-code -- api pkg/generated config/crd config/rbac
+	git diff --exit-code -- api pkg/generated config/crd config/rbac config/prometheus/dashboards charts
+	test -z "$$(git status --porcelain -- api pkg/generated config charts)"
 
 .PHONY: fmt
 fmt: ## Run gofmt.

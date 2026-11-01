@@ -1,0 +1,132 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dryrun-hpa.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dryrun-hpa.labels" . | nindent 4 }}
+spec:
+  # The SQLite database lives on a ReadWriteOnce volume: one replica, and the
+  # old pod stops before the new one starts.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "dryrun-hpa.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "dryrun-hpa.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "dryrun-hpa.serviceAccountName" . }}
+      terminationGracePeriodSeconds: 30
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: controller
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --leader-elect={{ .Values.leaderElection.enabled }}
+            - --leader-elect-resource-name={{ include "dryrun-hpa.fullname" . }}
+            - --leader-elect-resource-namespace={{ .Release.Namespace }}
+            - --horizontal-pod-autoscaler-sync-period={{ .Values.hpa.syncPeriod }}
+            - --horizontal-pod-autoscaler-tolerance={{ .Values.hpa.tolerance }}
+            - --horizontal-pod-autoscaler-downscale-stabilization={{ .Values.hpa.downscaleStabilization }}
+            - --horizontal-pod-autoscaler-cpu-initialization-period={{ .Values.hpa.cpuInitializationPeriod }}
+            - --horizontal-pod-autoscaler-initial-readiness-delay={{ .Values.hpa.initialReadinessDelay }}
+            - --concurrent-horizontal-pod-autoscaler-syncs={{ .Values.hpa.concurrentSyncs }}
+            - --decision-store={{ .Values.store.type }}
+            - --decision-db-path=/data/decisions.db
+            - --decision-retention={{ .Values.store.retention }}
+            - --pod-readiness-delay={{ .Values.simulation.podReadinessDelay }}
+            - --metrics-delay={{ .Values.simulation.metricsDelay }}
+            - --source-missing-pods={{ .Values.simulation.sourceMissingPods }}
+            - --compare-real-hpa={{ .Values.compareRealHPA }}
+            - --per-object-metrics={{ .Values.perObjectMetrics }}
+            - --enable-pprof={{ .Values.enablePprof }}
+            - --kube-api-qps={{ .Values.kubeAPI.qps }}
+            - --kube-api-burst={{ .Values.kubeAPI.burst }}
+            - --logging-format={{ .Values.logging.format }}
+            - --v={{ .Values.logging.verbosity }}
+            {{- with .Values.tracing.endpoint }}
+            - --tracing-endpoint={{ . }}
+            - --tracing-insecure={{ $.Values.tracing.insecure }}
+            - --tracing-sampling-ratio={{ $.Values.tracing.samplingRatio }}
+            {{- end }}
+            {{- range .Values.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          env:
+            - name: GOMEMLIMIT
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.memory
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: metrics
+              containerPort: 8080
+            - name: health
+              containerPort: 8081
+            - name: export
+              containerPort: 8082
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          {{- if and (eq .Values.store.type "sqlite") .Values.store.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "dryrun-hpa.claimName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

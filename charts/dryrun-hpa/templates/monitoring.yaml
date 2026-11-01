@@ -1,0 +1,44 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "dryrun-hpa.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dryrun-hpa.labels" . | nindent 4 }}
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "dryrun-hpa.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
+{{- end }}
+{{- if .Values.dashboards.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "dryrun-hpa.fullname" . }}-dashboards
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dryrun-hpa.labels" . | nindent 4 }}
+    {{- with .Values.dashboards.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.dashboards.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+data:
+  {{- range $path, $_ := .Files.Glob "files/dashboards/*.json" }}
+  {{ base $path }}: |-
+    {{- $.Files.Get $path | nindent 4 }}
+  {{- end }}
+{{- end }}

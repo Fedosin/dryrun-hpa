@@ -22,4 +22,4 @@ make e2e
 The parity test runs the Kubernetes HPA walkthrough (php-apache under a fixed
 request load) with a real HPA and a DryrunHPA that have the same spec and
 target the same Deployment, and requires them to agree within one replica.
-It takes about 15 minutes.
+It takes about 6 minutes; the rest of the suite takes about one.

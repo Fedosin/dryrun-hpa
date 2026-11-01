@@ -1,0 +1,14 @@
+The dry-run HPA controller is running in {{ .Release.Namespace }}.
+
+Create a DryrunHorizontalPodAutoscaler with the same spec as an
+autoscaling/v2 HorizontalPodAutoscaler that targets a Deployment:
+
+  kubectl get dhpa -A
+
+{{- if eq .Values.store.type "sqlite" }}
+
+Export recorded decisions through the API server service proxy:
+
+  dryrun-hpactl --service {{ .Release.Namespace }}/{{ include "dryrun-hpa.fullname" . }}:export report
+  dryrun-hpactl --service {{ .Release.Namespace }}/{{ include "dryrun-hpa.fullname" . }}:export export -o csv -f decisions.csv
+{{- end }}

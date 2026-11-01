@@ -1,0 +1,21 @@
+{{- if and (eq .Values.store.type "sqlite") .Values.store.persistence.enabled (not .Values.store.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "dryrun-hpa.claimName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dryrun-hpa.labels" . | nindent 4 }}
+  annotations:
+    # Keep recorded decisions when the release is uninstalled.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    {{- toYaml .Values.store.persistence.accessModes | nindent 4 }}
+  {{- with .Values.store.persistence.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.store.persistence.size }}
+{{- end }}
