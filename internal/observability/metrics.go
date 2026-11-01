@@ -25,6 +25,8 @@ import (
 
 	"k8s.io/component-base/metrics"
 	"k8s.io/component-base/metrics/legacyregistry"
+
+	"github.com/fedosin/dryrun-hpa/internal/version"
 )
 
 const namespace = "dryrun_hpa"
@@ -193,5 +195,6 @@ func Register() {
 		} {
 			legacyregistry.MustRegister(m)
 		}
+		BuildInfo.WithLabelValues(version.Version, version.UpstreamKubernetes).Set(1)
 	})
 }

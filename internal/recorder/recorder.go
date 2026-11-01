@@ -46,27 +46,21 @@ type RealState interface {
 
 // Recorder implements podautoscaler.ReconcileObserver.
 type Recorder struct {
-	writer    *store.Writer
-	storeName string
-	real      RealState
-	objects   *observability.ObjectMetrics
-	tracer    trace.Tracer
+	writer  *store.Writer
+	real    RealState
+	objects *observability.ObjectMetrics
+	tracer  trace.Tracer
 }
 
 var _ podautoscaler.ReconcileObserver = &Recorder{}
 
 // New returns a recorder. writer may be nil when decisions aren't stored.
 func New(writer *store.Writer, real RealState) *Recorder {
-	name := "none"
-	if writer != nil {
-		name = writer.Store().Name()
-	}
 	return &Recorder{
-		writer:    writer,
-		storeName: name,
-		real:      real,
-		objects:   observability.Objects(),
-		tracer:    otel.Tracer("github.com/fedosin/dryrun-hpa/internal/recorder"),
+		writer:  writer,
+		real:    real,
+		objects: observability.Objects(),
+		tracer:  otel.Tracer("github.com/fedosin/dryrun-hpa/internal/recorder"),
 	}
 }
 
@@ -91,10 +85,14 @@ func (r *Recorder) EndReconcile(ctx context.Context, d *podautoscaler.Decision) 
 			span.SetStatus(codes.Error, d.Err.Error())
 		}
 		r.observe(d, &rec)
-		observability.Decisions.WithLabelValues(outcome(&rec), r.storeName).Inc()
+		queued := "disabled"
 		if r.writer != nil {
-			r.writer.Enqueue(rec)
+			queued = "queued"
+			if !r.writer.Enqueue(rec) {
+				queued = "dropped"
+			}
 		}
+		observability.Decisions.WithLabelValues(outcome(&rec), queued).Inc()
 	})
 }
 

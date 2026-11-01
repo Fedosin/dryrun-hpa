@@ -29,7 +29,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	logsapi "k8s.io/component-base/logs/api/v1"
-	_ "k8s.io/component-base/logs/json/register" // enables --logging-format=json
+	_ "k8s.io/component-base/logs/json/register"          // enables --logging-format=json
+	_ "k8s.io/component-base/metrics/prometheus/clientgo" // workqueue, REST client, leader election and informer metrics
 	"k8s.io/klog/v2"
 
 	"github.com/fedosin/dryrun-hpa/internal/app"

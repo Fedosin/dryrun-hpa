@@ -25,6 +25,7 @@ help: ## Show this help.
 .PHONY: generate
 generate: $(BIN)/controller-gen ## Generate deepcopy, CRDs, RBAC, clientset, listers and informers.
 	CONTROLLER_GEN=$(BIN)/controller-gen ./hack/update-codegen.sh
+	go run ./hack/dashboards config/grafana
 
 .PHONY: sync-upstream
 sync-upstream: ## Re-copy the upstream HPA controller and apply hack/upstream-patches.
