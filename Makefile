@@ -25,7 +25,7 @@ help: ## Show this help.
 .PHONY: generate
 generate: $(BIN)/controller-gen ## Generate deepcopy, CRDs, RBAC, clientset, listers and informers.
 	CONTROLLER_GEN=$(BIN)/controller-gen ./hack/update-codegen.sh
-	go run ./hack/dashboards config/grafana
+	go run ./hack/dashboards config/prometheus/dashboards
 
 .PHONY: sync-upstream
 sync-upstream: ## Re-copy the upstream HPA controller and apply hack/upstream-patches.
@@ -89,9 +89,12 @@ kind-load: image ## Load the image into the kind cluster.
 	./hack/kind-load.sh $(KIND_CLUSTER) $(IMG)
 
 .PHONY: deploy
-deploy: ## Deploy the controller with kustomize (config/default).
-	cd config/manager && kustomize edit set image controller=$(IMG) 2>/dev/null || true
-	kubectl apply -k config/default
+deploy: ## Deploy the controller with kustomize (config/default) and image IMG.
+	./hack/deploy.sh config/default $(IMG)
+
+.PHONY: deploy-e2e
+deploy-e2e: ## Deploy the controller with the e2e settings (config/e2e).
+	./hack/deploy.sh config/e2e $(IMG)
 
 .PHONY: undeploy
 undeploy: ## Remove the controller.

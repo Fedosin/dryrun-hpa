@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: dryrun-hpa-controller
+  namespace: dryrun-hpa-system
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dryrun-hpa-controller
+  endpoints:
+    - port: metrics
+      interval: 15s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod

@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dryrun-hpa-controller
+  namespace: dryrun-hpa-system
+  labels:
+    app.kubernetes.io/name: dryrun-hpa-controller
+spec:
+  # The SQLite database lives on a ReadWriteOnce volume: one replica, and the
+  # old pod stops before the new one starts.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dryrun-hpa-controller
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dryrun-hpa-controller
+    spec:
+      serviceAccountName: dryrun-hpa-controller
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: controller
+          image: localhost/dryrun-hpa:dev
+          args:
+            - --leader-elect=true
+            - --leader-elect-resource-namespace=dryrun-hpa-system
+            - --decision-db-path=/data/decisions.db
+          env:
+            - name: GOMEMLIMIT
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.memory
+          ports:
+            - name: metrics
+              containerPort: 8080
+            - name: health
+              containerPort: 8081
+            - name: export
+              containerPort: 8082
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: dryrun-hpa-decisions

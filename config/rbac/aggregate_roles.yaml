@@ -1,0 +1,26 @@
+# Let namespace users manage DryrunHPAs like HPAs, and see VirtualWorkloads.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dryrun-hpa-edit
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+rules:
+  - apiGroups: ["dryrun-hpa.io"]
+    resources: ["dryrunhorizontalpodautoscalers"]
+    verbs: ["create", "delete", "deletecollection", "get", "list", "patch", "update", "watch"]
+  - apiGroups: ["dryrun-hpa.io"]
+    resources: ["dryrunhorizontalpodautoscalers/status", "virtualworkloads", "virtualworkloads/status"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dryrun-hpa-view
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+  - apiGroups: ["dryrun-hpa.io"]
+    resources: ["dryrunhorizontalpodautoscalers", "dryrunhorizontalpodautoscalers/status", "virtualworkloads", "virtualworkloads/status"]
+    verbs: ["get", "list", "watch"]

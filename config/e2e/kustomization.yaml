@@ -1,0 +1,26 @@
+# Used by the e2e tests: compares with real HPAs, exports per-object metrics,
+# and reacts quickly.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../default
+patches:
+  - target:
+      kind: Deployment
+      name: dryrun-hpa-controller
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --compare-real-hpa
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --per-object-metrics
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-pprof
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --decision-flush-interval=200ms
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: -v=2

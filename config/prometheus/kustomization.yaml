@@ -1,0 +1,16 @@
+# Optional: requires the Prometheus Operator CRDs.
+#   kubectl apply -k config/prometheus
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - servicemonitor.yaml
+configMapGenerator:
+  - name: dryrun-hpa-dashboards
+    namespace: dryrun-hpa-system
+    files:
+      - dashboards/dryrun-hpa-cost.json
+      - dashboards/dryrun-hpa-objects.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"

@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -222,8 +223,8 @@ func runControllers(ctx context.Context, o *Options, cfg *rest.Config, kube kube
 	dryrun dryrunclientset.Interface, st store.Store, ready *atomic.Bool) error {
 	logger := klog.FromContext(ctx)
 
-	kubeFactory := informers.NewSharedInformerFactoryWithOptions(kube, 0, informers.WithTransform(trimManagedFields))
-	dryrunFactory := dryruninformers.NewSharedInformerFactoryWithOptions(dryrun, 0)
+	kubeFactory := informers.NewSharedInformerFactoryWithOptions(kube, resyncPeriod(), informers.WithTransform(trimManagedFields))
+	dryrunFactory := dryruninformers.NewSharedInformerFactoryWithOptions(dryrun, resyncPeriod())
 
 	dhpaInformer := dryrunFactory.Dryrun().V1alpha1().DryrunHorizontalPodAutoscalers().Informer()
 	vwInformer := dryrunFactory.Dryrun().V1alpha1().VirtualWorkloads()
@@ -427,4 +428,11 @@ func startServers(ctx context.Context, o *Options, st store.Store, ready *atomic
 
 	serve("export", o.ExportBindAddress, exportapi.NewHandler(st))
 	return servers
+}
+
+// resyncPeriod matches kube-controller-manager's default informer resync:
+// a random duration in [12h, 24h) so factories don't resync in lockstep.
+func resyncPeriod() time.Duration {
+	const minResync = 12 * time.Hour
+	return time.Duration(float64(minResync) * (1 + rand.Float64()))
 }

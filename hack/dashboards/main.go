@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Command dashboards generates the Grafana dashboards in config/grafana.
+// Command dashboards generates the Grafana dashboards in config/prometheus/dashboards.
 //
-//	go run ./hack/dashboards config/grafana
+//	go run ./hack/dashboards config/prometheus/dashboards
 package main
 
 import (
