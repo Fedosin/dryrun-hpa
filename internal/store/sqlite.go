@@ -288,7 +288,7 @@ func (s *SQLite) Specs(ctx context.Context, namespace, name string) ([]SpecVersi
 		return nil, err
 	}
 	defer rows.Close()
-	var out []SpecVersion
+	out := []SpecVersion{}
 	for rows.Next() {
 		var v SpecVersion
 		var ts int64

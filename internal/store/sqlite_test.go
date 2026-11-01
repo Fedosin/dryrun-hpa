@@ -86,6 +86,11 @@ func TestSQLiteRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, specs, 1)
 	assert.JSONEq(t, `{"maxReplicas":10}`, string(specs[0].Spec))
+
+	specs, err = s.Specs(ctx, "prod", "missing")
+	require.NoError(t, err)
+	assert.NotNil(t, specs, "encodes as [] rather than null")
+	assert.Empty(t, specs)
 }
 
 func TestSQLiteFilters(t *testing.T) {

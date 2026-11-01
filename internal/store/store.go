@@ -160,7 +160,9 @@ func (None) Query(context.Context, Filter) iter.Seq2[Record, error] {
 }
 
 // Specs implements Store.
-func (None) Specs(context.Context, string, string) ([]SpecVersion, error) { return nil, nil }
+func (None) Specs(context.Context, string, string) ([]SpecVersion, error) {
+	return []SpecVersion{}, nil
+}
 
 // DeleteBefore implements Store.
 func (None) DeleteBefore(context.Context, time.Time) (int64, error) { return 0, nil }
