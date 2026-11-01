@@ -62,7 +62,7 @@ var (
 	ControllerSyncs = metrics.NewCounterVec(&metrics.CounterOpts{
 		Namespace:      namespace,
 		Name:           "controller_syncs_total",
-		Help:           "Number of syncs by controller (provisioner, virtualworkload) and result (success, error).",
+		Help:           "Number of syncs by controller (provisioner, virtualworkload) and result (success, conflict, error).",
 		StabilityLevel: metrics.ALPHA,
 	}, []string{"controller", "result"})
 

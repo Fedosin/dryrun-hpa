@@ -218,6 +218,12 @@ func (p *Provisioner) processNext(ctx context.Context) bool {
 	start := time.Now()
 	requeue, err := p.sync(ctx, key)
 	observability.ControllerSyncDuration.WithLabelValues(controllerProvisioner).Observe(time.Since(start).Seconds())
+	if k8serrors.IsConflict(err) {
+		observability.ControllerSyncs.WithLabelValues(controllerProvisioner, "conflict").Inc()
+		klog.FromContext(ctx).V(4).Info("Conflict provisioning VirtualWorkload, retrying", "dryrunHPA", key)
+		p.queue.AddRateLimited(key)
+		return true
+	}
 	if err != nil {
 		observability.ControllerSyncs.WithLabelValues(controllerProvisioner, "error").Inc()
 		utilruntime.HandleErrorWithContext(ctx, err, "Provisioning VirtualWorkload failed", "dryrunHPA", key)

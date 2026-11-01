@@ -195,6 +195,13 @@ func (c *Controller) processNext(ctx context.Context) bool {
 	start := time.Now()
 	requeue, err := c.sync(ctx, key)
 	observability.ControllerSyncDuration.WithLabelValues(controllerVirtualWorkload).Observe(time.Since(start).Seconds())
+	if k8serrors.IsConflict(err) {
+		// The HPA loop writes /scale concurrently; retry with a fresh copy.
+		observability.ControllerSyncs.WithLabelValues(controllerVirtualWorkload, "conflict").Inc()
+		klog.FromContext(ctx).V(4).Info("Conflict syncing VirtualWorkload, retrying", "virtualWorkload", key)
+		c.queue.AddRateLimited(key)
+		return true
+	}
 	if err != nil {
 		observability.ControllerSyncs.WithLabelValues(controllerVirtualWorkload, "error").Inc()
 		utilruntime.HandleErrorWithContext(ctx, err, "Syncing VirtualWorkload failed", "virtualWorkload", key)
