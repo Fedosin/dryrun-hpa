@@ -20,6 +20,8 @@ linters:
           disabled: true
   exclusions:
     generated: strict
+    presets:
+      - std-error-handling
     paths:
       # Copied verbatim from Kubernetes; kept byte-identical except for hack/upstream-patches.
       - internal/upstream

@@ -20,6 +20,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -125,22 +126,22 @@ func newExportCommand(src *sourceFlags) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			var w io.Writer = cmd.OutOrStdout()
-			if output != "" && output != "-" {
-				file, err := os.Create(output)
-				if err != nil {
+			if output == "" || output == "-" {
+				return withSource(cmd, src, func(s decisionSource) error {
+					_, err := analysis.WriteRecords(cmd.OutOrStdout(), fm, s.Records(cmd.Context(), f), metrics)
 					return err
-				}
-				defer file.Close()
-				w = file
+				})
 			}
-			return withSource(cmd, src, func(s decisionSource) error {
-				n, err := analysis.WriteRecords(w, fm, s.Records(cmd.Context(), f), metrics)
-				if output != "" && output != "-" {
-					fmt.Fprintf(cmd.ErrOrStderr(), "Wrote %d decisions to %s\n", n, output)
-				}
+			file, err := os.Create(output)
+			if err != nil {
+				return err
+			}
+			err = withSource(cmd, src, func(s decisionSource) error {
+				n, err := analysis.WriteRecords(file, fm, s.Records(cmd.Context(), f), metrics)
+				fmt.Fprintf(cmd.ErrOrStderr(), "Wrote %d decisions to %s\n", n, output)
 				return err
 			})
+			return errors.Join(err, file.Close())
 		},
 	}
 	ff.add(cmd)
