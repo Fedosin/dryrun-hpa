@@ -106,6 +106,10 @@ undeploy: ## Remove the controller.
 e2e: ## Run e2e tests against the current kube context (see test/e2e/README.md).
 	go test -tags e2e -count=1 -timeout 60m -v ./test/e2e/...
 
+.PHONY: perf-setup
+perf-setup: ## Install kwok and fake-metrics-server and deploy config/perf with image IMG.
+	IMG=$(IMG) ./test/perf/setup.sh
+
 .PHONY: perf
 perf: ## Run the Goal 1 performance matrix (see test/perf/README.md).
 	./test/perf/run-matrix.sh

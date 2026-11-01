@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fake-metrics-server
+  labels:
+    app: fake-metrics-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fake-metrics-server
+  template:
+    metadata:
+      labels:
+        app: fake-metrics-server
+    spec:
+      serviceAccountName: fake-metrics-server
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: server
+          image: localhost/dryrun-hpa:dev
+          command: ["/usr/local/bin/fake-metrics-server"]
+          args: ["--secure-addr=:6443"]
+          ports:
+            - name: https
+              containerPort: 6443
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: https
+              scheme: HTTPS
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fake-metrics-server
+spec:
+  selector:
+    app: fake-metrics-server
+  ports:
+    - name: https
+      port: 443
+      targetPort: https

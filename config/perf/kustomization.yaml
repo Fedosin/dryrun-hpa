@@ -1,0 +1,24 @@
+# Used by the perf harness (test/perf): enables pprof, raises client limits
+# so the controller isn't throttled by itself, and gives it room to grow.
+# Per-object metrics stay off: they are not part of the measured cost.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../default
+patches:
+  - target:
+      kind: Deployment
+      name: dryrun-hpa-controller
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-pprof
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --kube-api-qps=200
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --kube-api-burst=400
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 8Gi

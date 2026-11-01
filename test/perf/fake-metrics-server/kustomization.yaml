@@ -1,0 +1,9 @@
+# Replaces metrics-server with cmd/fake-metrics-server, which reports
+# synthetic usage for pods on kwok nodes. Only for perf clusters.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kube-system
+resources:
+  - rbac.yaml
+  - deployment.yaml
+  - apiservice.yaml
