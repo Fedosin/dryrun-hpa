@@ -132,6 +132,9 @@ type HorizontalController struct {
 
 	// consistencyStore is used to track the state of the controller's operations.
 	consistencyStore consistencyutil.ConsistencyStore
+
+	// dryrun reports decisions to the dry-run decision recorder.
+	dryrun dryrunHooks
 }
 
 // NewHorizontalController creates a new HorizontalController.
@@ -153,7 +156,7 @@ func NewHorizontalController(
 	broadcaster := record.NewBroadcaster(record.WithContext(ctx))
 	broadcaster.StartStructuredLogging(3)
 	broadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: evtNamespacer.Events("")})
-	recorder := broadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "horizontal-pod-autoscaler"})
+	recorder := wrapEventRecorder(broadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "dryrun-horizontal-pod-autoscaler"}))
 	var consistencyStore consistencyutil.ConsistencyStore
 
 	if utilfeature.DefaultFeatureGate.Enabled(features.StaleControllerConsistencyHPA) {
@@ -393,6 +396,7 @@ func (a *HorizontalController) computeReplicasForMetrics(ctx context.Context, hp
 
 	for i, metricSpec := range metricSpecs {
 		replicaCountProposal, metricNameProposal, timestampProposal, condition, err := a.computeReplicasForMetric(ctx, hpa, metricSpec, specReplicas, statusReplicas, selector, &statuses[i])
+		a.dryrun.observeMetricProposal(hpa, i, replicaCountProposal, err)
 
 		if err != nil {
 			if invalidMetricsCount <= 0 {
@@ -841,6 +845,8 @@ func (a *HorizontalController) reconcileAutoscaler(ctx context.Context, hpaShare
 	// make a copy so that we never mutate the shared informer cache (conversion can mutate the object)
 	hpa := hpaShared.DeepCopy()
 	hpaStatusOriginal := hpa.Status.DeepCopy()
+	ctx, decision := a.dryrun.begin(ctx, hpa, key)
+	defer func() { a.dryrun.end(ctx, decision, hpa, retErr) }()
 
 	reference := fmt.Sprintf("%s/%s/%s", hpa.Spec.ScaleTargetRef.Kind, hpa.Namespace, hpa.Spec.ScaleTargetRef.Name)
 
@@ -880,6 +886,7 @@ func (a *HorizontalController) reconcileAutoscaler(ctx context.Context, hpaShare
 	}
 	setCondition(hpa, autoscalingv2.AbleToScale, v1.ConditionTrue, "SucceededGetScale", "the HPA controller was able to get the target's current scale")
 	currentReplicas := scale.Spec.Replicas
+	decision.observeScale(currentReplicas)
 	a.recordInitialRecommendation(currentReplicas, key)
 
 	var (
@@ -987,6 +994,7 @@ func (a *HorizontalController) reconcileAutoscaler(ctx context.Context, hpaShare
 		}
 		rescale = desiredReplicas != currentReplicas
 	}
+	decision.observeDesired(needsMetricComputation, metricDesiredReplicas, metricName, desiredReplicas, rescale, rescaleReason)
 	if rescale {
 		err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			// On each retry, set the desired replicas on the scale object.
@@ -1108,6 +1116,7 @@ func (a *HorizontalController) stabilizeRecommendation(key string, prenormalized
 // minReplicas, etc...)
 func (a *HorizontalController) normalizeDesiredReplicas(hpa *autoscalingv2.HorizontalPodAutoscaler, key string, currentReplicas int32, prenormalizedDesiredReplicas int32, minReplicas int32) int32 {
 	stabilizedRecommendation := a.stabilizeRecommendation(key, prenormalizedDesiredReplicas)
+	a.dryrun.observeStabilized(key, stabilizedRecommendation)
 	if stabilizedRecommendation != prenormalizedDesiredReplicas {
 		setCondition(hpa, autoscalingv2.AbleToScale, v1.ConditionTrue, "ScaleDownStabilized", "recent recommendations were higher than current one, applying the highest recent recommendation")
 	} else {
@@ -1152,6 +1161,7 @@ func (a *HorizontalController) normalizeDesiredReplicasWithBehaviors(hpa *autosc
 		CurrentReplicas:   currentReplicas,
 		DesiredReplicas:   prenormalizedDesiredReplicas}
 	stabilizedRecommendation, reason, message := a.stabilizeRecommendationWithBehaviors(normalizationArg)
+	a.dryrun.observeStabilized(key, stabilizedRecommendation)
 	normalizationArg.DesiredReplicas = stabilizedRecommendation
 	if stabilizedRecommendation != prenormalizedDesiredReplicas {
 		// "ScaleUpStabilized" || "ScaleDownStabilized"

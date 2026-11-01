@@ -165,7 +165,7 @@ case "${1:-}" in
     done
     cp "${work}/a/internal/upstream/features/kube_features.go" "${work}/b/internal/upstream/features/kube_features.go" 2>/dev/null ||
       { mkdir -p "${work}/b/internal/upstream/features"; cp "${work}/a/internal/upstream/features/kube_features.go" "${work}/b/internal/upstream/features/"; }
-    (cd "${work}" && diff -ruN a b) || true
+    (cd "${work}" && diff -ruN a b) | sed -E 's/^(---|\+\+\+) ([^\t]+)\t.*/\1 \2/' || true
     ;;
   --no-patches)
     copy_pristine "${SRC}" "${DEST}"
