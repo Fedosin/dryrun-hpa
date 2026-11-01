@@ -116,5 +116,9 @@ perf-setup: ## Install kwok and fake-metrics-server and deploy config/perf with 
 perf: ## Run the Goal 1 performance matrix (see test/perf/README.md).
 	./test/perf/run-matrix.sh
 
+.PHONY: perf-teardown
+perf-teardown: ## Undo perf-setup and reinstall metrics-server.
+	./test/perf/teardown.sh
+
 $(BIN)/controller-gen:
 	GOBIN=$(BIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION)

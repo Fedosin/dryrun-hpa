@@ -111,7 +111,9 @@ show the upstream share and the overhead. PromQL for live clusters is in
 ## Cleaning up
 
 ```sh
-bin/loadgen delete --run perf
+make perf-teardown    # delete the load, kwok and fake-metrics-server; reinstall metrics-server
 ```
 
-or delete the cluster with `make kind-down`.
+The e2e tests need the real metrics-server, so run this before `make e2e`
+on a cluster that was set up for perf, or delete the cluster with
+`make kind-down`.

@@ -18,16 +18,5 @@ if ! kind get clusters 2>/dev/null | grep -qx "${KIND_CLUSTER}"; then
 fi
 kubectl config use-context "kind-${KIND_CLUSTER}"
 
-if [[ "${METRICS_SERVER_VERSION}" == latest ]]; then
-  url=https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-else
-  url=https://github.com/kubernetes-sigs/metrics-server/releases/download/${METRICS_SERVER_VERSION}/components.yaml
-fi
-kubectl apply -f "${url}"
-# kind kubelets serve self-signed certificates; scrape every 15s like the defaults of most clusters.
-kubectl -n kube-system patch deployment metrics-server --type=json -p='[
-  {"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"},
-  {"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--metric-resolution=15s"}
-]' 2>/dev/null || true
-kubectl -n kube-system rollout status deployment metrics-server --timeout=3m
+METRICS_SERVER_VERSION=${METRICS_SERVER_VERSION} "$(dirname "${BASH_SOURCE[0]}")/install-metrics-server.sh"
 echo "Cluster kind-${KIND_CLUSTER} is ready."
