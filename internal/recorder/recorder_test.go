@@ -43,7 +43,9 @@ import (
 
 type fakeReal struct{}
 
-func (fakeReal) SourceReplicas(string, autoscalingv2.CrossVersionObjectReference) *int32 { return ptr.To[int32](3) }
+func (fakeReal) SourceReplicas(string, autoscalingv2.CrossVersionObjectReference) *int32 {
+	return ptr.To[int32](3)
+}
 func (fakeReal) RealHPADesired(string, autoscalingv2.CrossVersionObjectReference) *int32 {
 	return ptr.To[int32](5)
 }
