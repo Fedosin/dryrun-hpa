@@ -1,0 +1,13 @@
+/bin/
+/dist/
+/_output/
+*.db
+*.db-shm
+*.db-wal
+*.test
+*.out
+cover.html
+/test/perf/results/
+/test/perf/.cache/
+.idea/
+.vscode/

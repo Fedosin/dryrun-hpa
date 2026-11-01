@@ -1,0 +1,4 @@
+# Upstream Kubernetes release the HPA controller is copied from.
+# Consumed by hack/sync-upstream.sh.
+KUBERNETES_VERSION=v1.37.2
+KUBERNETES_COMMIT=c50e5395f1ae2d4a2c05f28fdcc38c0916cc1a32

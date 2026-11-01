@@ -1,0 +1,35 @@
+version: "2"
+
+run:
+  timeout: 10m
+
+linters:
+  default: standard
+  enable:
+    - errorlint
+    - misspell
+    - nolintlint
+    - revive
+    - unconvert
+  settings:
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+  exclusions:
+    generated: strict
+    paths:
+      # Copied verbatim from Kubernetes; kept byte-identical except for hack/upstream-patches.
+      - internal/upstream
+      - pkg/generated
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    paths:
+      - internal/upstream
+      - pkg/generated

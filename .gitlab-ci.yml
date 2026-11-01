@@ -1,0 +1,57 @@
+stages:
+  - verify
+  - test
+  - build
+
+default:
+  image: golang:1.26
+  cache:
+    key: go-mod
+    paths:
+      - .cache/go-mod
+  before_script:
+    - export GOMODCACHE="$CI_PROJECT_DIR/.cache/go-mod"
+
+lint:
+  stage: verify
+  image: golangci/golangci-lint:v2.13.2
+  script:
+    - golangci-lint run ./...
+
+verify-generated:
+  stage: verify
+  script:
+    - make verify-generate
+
+verify-upstream:
+  stage: verify
+  script:
+    - apt-get update -qq && apt-get install -y -qq patch >/dev/null
+    - make verify-upstream
+
+unit:
+  stage: test
+  script:
+    - go test -race -count=1 -coverprofile=cover.out ./api/... ./internal/... ./cmd/...
+    - go tool cover -func=cover.out | tail -1
+  coverage: '/total:\s+\(statements\)\s+(\d+.\d+)%/'
+
+build:
+  stage: build
+  script:
+    - make build
+  artifacts:
+    paths:
+      - bin/
+    expire_in: 1 week
+
+image:
+  stage: build
+  image: quay.io/buildah/stable
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  before_script: []
+  script:
+    - buildah bud -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" .
+    - buildah login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - buildah push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
